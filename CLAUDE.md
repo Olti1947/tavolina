@@ -27,10 +27,10 @@ A system that runs a café or restaurant in Kosovo, built around how service act
 
 **Core (launch)**
 - **Counter POS** (tablet at the bar/counter): quick sale, table overview, payments, fiscal receipts.
-- **Waiter handheld** (Android phone): each waiter opens their own tables, takes orders at the table, sends them to the bar and kitchen, takes payment and issues the receipt.
+- **Waiter handheld** (Android phone): each waiter opens their own tables, takes orders at the table, sends them to the bar and kitchen, takes payment and issues the receipt, other waiters have read-only permission to other waiters' tables in the case they need to take payment for them, but only the table owner can change status of the table.
 - **Station printing:** order tickets print directly on the bar and kitchen printers over the venue's Wi-Fi (or Bluetooth), even with no internet.
 - **Waiter settlement:** at shift close, each waiter's sales and the cash they must hand over are calculated automatically.
-- **Owner app:** today's sales, per-waiter totals, VAT summary, Z-reports, device alerts.
+- **Owner app:** a **live view of the current shift** (open tables, each waiter's sales and cash held, voids and other sensitive actions), push alerts on owner-set thresholds, today's sales, per-waiter totals, VAT summary, Z-reports, device alerts.
 - **Built-in support tooling:** printer and device health alerts, remote diagnostics, a support log.
 
 **Add-ons (after launch, sold separately)**
@@ -72,7 +72,7 @@ A system that runs a café or restaurant in Kosovo, built around how service act
 - Payments (cash, card recorded as method), receipt via `FiscalProvider` (mock), printing.
 - **Direct station printing** (ESC/POS over TCP 9100 on LAN, plus Bluetooth), with retry, a queue and printer status.
 - Shifts per device and per waiter, **waiter settlement**, X/Z reports.
-- Owner app/web: dashboard (sales, by payment method, by VAT rate, by waiter, by hour, top items), menu, tables, staff, devices, CSV export.
+- Owner app/web: live shift view and threshold alerts (section 6.8), dashboard (sales, by payment method, by VAT rate, by waiter, by hour, top items), menu, tables, staff, devices, CSV export.
 - Offline-first on every device, with sync.
 - Device health: heartbeat, app version, printer status (online, paper out, error), unsynced-queue age; alerts to the owner and to us.
 - Languages: Albanian (`sq`, default) and English (`en`). Design for adding Serbian (`sr-Latn`).
@@ -240,6 +240,22 @@ Olt does not have a printer, tablet or spare phone yet. Everything up to M6 must
 - **Tablet layout without a tablet:** use an Android emulator profile of about 10" (for example a Pixel Tablet image), and the phone layout on the phone emulator or Olt's own phone.
 - **Rule:** no code path may assume a physical printer exists; a missing printer is a normal, handled state with a clear message.
 
+### 6.8 Owner live view and alerts
+The owner checks in on the shift from their phone at any time of day, mainly to keep an eye on waiters.
+- **Live screen** (separate from history reports):
+  - **Open tables:** owning waiter, amount, time open, time since the last send. Highlight tables open a long time with nothing sent recently.
+  - **Per waiter:** sales so far, cash currently held (cash to hand over), receipts count, voids.
+  - **Today vs. usual:** revenue so far against the same weekday's average up to this hour.
+  - **Sensitive-action feed:** voids, cancellations, manager takeovers, refunds and ownership transfers, with who did it, who approved it (PIN) and the reason. Built from the audit log.
+- **Freshness, not realtime.** The owner app does **not** use WebSocket. It refreshes with a refresh button and pull-to-refresh, and auto-refreshes about every 2 minutes (a setting) only while the screen is visible. It always shows "Përditësuar 21:42" (updated at) at the top.
+- **Sync honesty:** data only reaches the server when devices sync, so each waiter/device row shows how fresh its data is ("telefoni offline që nga 21:40"). Never present unsynced totals as complete.
+- **Push alerts** are evaluated **on the server** whenever device data syncs, and sent as push notifications whether the owner app is open or not. Owner-configurable rules, all off or at sensible defaults out of the box:
+  - a void or cancellation over €X, or more than N voids in a shift;
+  - a waiter holding more than €X cash (prompt a mid-shift cash drop);
+  - a table open more than X minutes with nothing sent;
+  - lines sent to a station but never paid when the waiter or device shift closes.
+- Alert channel: web push from the PWA for now (on iPhone this needs the app added to the home screen). Viber/WhatsApp delivery is an open question (section 12).
+
 ---
 
 ## 7. The fiscal layer
@@ -298,7 +314,7 @@ public interface FiscalProvider {
 
 - REST under `/api/v1`, documented with OpenAPI. Generate `packages/api-client` from it in CI.
 - Auth: owners use phone or email + password (JWT access plus refresh tokens). Devices register once with a pairing code from the owner app and get a device token; staff switch users by PIN on the device.
-- Realtime: STOMP over WebSocket per venue (`/topic/venue/{id}/tables`, `/topic/venue/{id}/alerts`) so counters and handhelds see table state live when online. Clients re-fetch state on reconnect; realtime is a convenience, never a dependency.
+- Realtime: STOMP over WebSocket per venue (`/topic/venue/{id}/tables`, `/topic/venue/{id}/alerts`) so counters and handhelds see table state live when online (operational need: two people must not take the same table). Clients re-fetch state on reconnect; realtime is a convenience, never a dependency. **The owner app does not use WebSocket**; it polls and has a refresh button (section 6.8).
 - Idempotency: every device write takes a client UUID; replays return the original result.
 - Validation: the server recomputes all totals from lines and rejects mismatches.
 - Security basics: argon2/bcrypt for passwords and PINs; PIN lockout after 5 failures; no secrets in the repo (`.env.example` only); the audit log's DB role has no `UPDATE`/`DELETE`; a lost phone can be revoked from the owner app.
@@ -342,13 +358,21 @@ Each milestone ends with green tests, `docs/demo-<milestone>.md` (steps for Olt 
 - [ ] Phone layout: waiter shift, "My tables", open table, order, send, bill, pay, issue, print to a chosen printer.
 - [ ] Table ownership rules; read-only view of others' tables; transfers (online) and manager takeover (audited).
 - [ ] Live table state across devices via WebSocket when online.
+- [ ] Every sensitive action (void, cancellation, takeover, transfer, refund) writes an audit entry with actor, approver and reason in a shape the owner live feed (M4) can query.
 - [ ] Waiter settlement: live cash-to-hand-over on the phone, shift close, acceptance on the counter, settlement slip.
 **Done when:** two phones and one tablet run a 10-table service, each waiter's settlement matches their payments to the cent, and the counter sees every table live.
 
 ### M4 — Owner app and reports
+**M4a — Live view and alerts (section 6.8)**
+- [ ] Live screen: open tables, per-waiter sales and cash held, today vs. usual, sensitive-action feed.
+- [ ] Polling (≈2 min while visible, configurable) plus refresh button and pull-to-refresh; "updated at" label; per-device data freshness.
+- [ ] Server-side alert rules evaluated on sync; owner-configurable thresholds; web push delivery.
+
+**M4b — History reports**
 - [ ] Dashboard: today and date range; revenue, by payment method, by VAT rate, **by waiter**, by hour, top items, voids; CSV export.
 - [ ] X and Z reports (stored and printable); waiter settlements history.
-**Done when:** the owner can see yesterday's sales by VAT rate and by waiter on their phone and reconcile every waiter's cash.
+
+**Done when:** during a service the owner sees each waiter's sales and cash held on their phone (refreshing on its own and on demand), gets a push alert when a void exceeds the threshold, sees which devices haven't synced, and can see yesterday's sales by VAT rate and by waiter and reconcile every waiter's cash.
 
 ### M5 — Offline hardening
 - [ ] Full local store and outboxes on every device; sync worker with backoff; idempotent sync endpoints.
@@ -411,6 +435,8 @@ Starts only when Olt says the hardware has arrived: an 80 mm LAN/Wi-Fi thermal p
 7. Dealer partnership terms: revenue share, who does first-line support, who installs?
 8. Pricing per tier within ~€25–60/month, plus setup and hardware bundle prices.
 9. Company setup: a Kosovo company with a local partner, given Olt studies in Hungary on a student permit (check permit rules first).
+10. Owner alerts: is web push enough, or do owners need alerts on Viber/WhatsApp (and do those offer a usable business API at our price point)?
+11. Monitoring individual waiters (per-waiter sales, voids, cash held): anything in Kosovo labour or data-protection law we must tell staff or respect?
 
 ---
 
