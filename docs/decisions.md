@@ -9,3 +9,11 @@ ADR-lite log: date, decision, why. Newest at the bottom.
 ## 2026-11-11 — Owner app polls; no WebSocket
 **Decision:** The owner app refreshes by polling (about every 2 minutes, configurable, only while the screen is visible) plus a refresh button and pull-to-refresh, and shows an "updated at" time and per-device data freshness. Counter and handheld devices keep the optional STOMP/WebSocket table updates. Alert rules run on the server when device data syncs and are delivered as push notifications, independent of the owner app being open.
 **Why:** The owner is monitoring, not operating; a delay of a couple of minutes changes no decision. Data freshness is limited by device sync anyway (devices work offline), so a socket would not make it more current. Mobile browsers drop sockets when backgrounded, so a refetch path is needed regardless. Polling is simpler and cheaper to run at €25–60/venue/month. Devices on the floor still need second-level updates so two staff don't take the same table.
+
+## 2026-11-12 — `packages/shared` for TS domain logic
+**Decision:** Add `packages/shared` for TypeScript code both `apps/device` and `apps/admin` need: money and date formatting (`1.234,50 €`, `dd.MM.yyyy`), i18n resources, VAT math, ownership and cash-limit rules. It holds hand-written logic only; `packages/api-client` stays generated.
+**Why:** Without a home, this code gets copied between the two apps and drifts. One package means one fix applies everywhere.
+
+## 2026-11-12 — Shared VAT test fixtures across Java and TS
+**Decision:** VAT math lives in one function per language (Java in `apps/api`, TS in `packages/shared`). Both test suites run the same cases from `packages/shared/fixtures/vat-cases.json`.
+**Why:** Devices compute totals offline and the server recomputes and rejects mismatches. A one-cent disagreement between the two implementations would reject valid offline orders in a venue. Shared fixtures make any drift fail CI instead.
