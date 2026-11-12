@@ -1,6 +1,10 @@
 # One entry point for local development (see docs/decisions.md).
 # Parts that are not scaffolded yet are skipped with a note instead of failing.
 
+# Export the root .env so the API (and later the other apps) see the same settings as Postgres.
+-include .env
+export
+
 # Compose looks for .env next to the compose file, so pass the root .env explicitly.
 COMPOSE := docker compose $(if $(wildcard .env),--env-file .env) -f infra/docker-compose.yml
 
