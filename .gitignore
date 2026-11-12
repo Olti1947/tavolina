@@ -1,0 +1,36 @@
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Java / Maven
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.turbo/
+
+# Expo / React Native / Android
+.expo/
+.expo-shared/
+android/
+ios/
+*.keystore
+*.jks
+!debug.keystore
+
+# Playwright
+playwright-report/
+test-results/
