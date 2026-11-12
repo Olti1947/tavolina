@@ -1,0 +1,31 @@
+# Local development infrastructure. Run through `make db` / `make stop` from the repo root,
+# which passes the root .env with --env-file. Every variable has a default, so it also starts
+# without a .env.
+
+name: tavolina
+
+services:
+  postgres:
+    image: postgres:16.10-alpine # pinned minor; bump deliberately
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tavolina}
+      POSTGRES_USER: ${POSTGRES_USER:-tavolina}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      # Store everything in UTC; apps display Europe/Belgrade (CLAUDE.md §5).
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      # Localhost only: devices talk to the API, never to the database.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:
