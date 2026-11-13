@@ -9,7 +9,7 @@ export
 COMPOSE := docker compose $(if $(wildcard .env),--env-file .env) -f infra/docker-compose.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help dev db db-reset psql stop
+.PHONY: help dev db db-reset psql stop api-client
 
 help: ## Show available commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-9s %s\n", $$1, $$2}'
@@ -38,3 +38,7 @@ dev: db ## Start the database, API, admin app and fake printer
 
 stop: ## Stop the database (data is kept)
 	@if [ -f infra/docker-compose.yml ]; then $(COMPOSE) down; fi
+
+api-client: ## Export the OpenAPI spec from the API and regenerate packages/api-client (needs Docker)
+	cd apps/api && ./mvnw -q test -Dtest=OpenApiSpecExportTest -Dsurefire.failIfNoSpecifiedTests=false
+	npm run generate -w @tavolina/api-client
