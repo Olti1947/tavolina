@@ -65,3 +65,23 @@ ADR-lite log: date, decision, why. Newest at the bottom.
 ## 2026-11-13 — Device layout is chosen by screen size until pairing exists
 **Decision:** `apps/device` shows the tablet (counter) layout when the shortest side is ≥ 600 dp, and the phone (waiter) layout otherwise. The admin PWA manifest waits for M4.
 **Why:** Device kind (`COUNTER | HANDHELD`) comes from pairing in M1/M2. Until then, screen size lets both layouts run on emulators. The same rule gives the counter layout in the web build, which the Electron desktop counter will load (`npx expo export -p web` already works).
+
+## 2026-11-13 — Keep building while the fiscal spec is missing
+**Decision:** M0–M6 continue with `MockFiscalProvider`. The missing "EFS Implementation Specifications" (NUIKF, QR payload, signing, transmission, possibly rounding) blocks M7 and pilots, not the milestones before them. Target: have the spec, or a partner's SDK, by M4.
+**Why:** Everything fiscal sits behind `FiscalProvider`, and VAT rounding is one function per language with shared fixtures, so a rule change later is small. The documents we have already show four things to design for now: VAT rate letters (`A`–`E`), four-decimal SEF unit prices, discounts per VAT rate, and a receipt-number format owned by the provider.
+
+## 2026-11-13 — Fiscal receipts are issued centrally by a venue hub on the counter
+**Decision:** Phones never issue fiscal receipts. When a waiter takes payment, the phone sends the order and payments over the venue LAN to the **counter**, which acts as the venue's fiscal hub: it calls `FiscalProvider.issue`, holds the single receipt sequence and the fiscal outbox, and returns the receipt for the phone to print. Requests are idempotent by client UUID. If the hub can't be reached, the order stays unpaid until a receipt is issued.
+**Why:** It means one ATK registration, certificate and key per venue instead of per phone (cheaper, and a lost phone never holds a signing key), one sequence and one Z-report per venue, and it is allowed whichever way the spec decides per-device issuing. The cost: the hub is a single point of failure, and phones need venue Wi-Fi to fiscalize. With the internet down, the LAN still works, so service continues. Promoting a backup hub is deferred because the sequence must never fork.
+
+## 2026-11-13 — The counter runs on the venue's Windows touch-screen PC (Electron)
+**Decision:** The counter POS targets the Windows 10+ touch-screen PCs that cafés already use, through an **Electron** shell (`apps/desktop`) around the device app's web build. Node provides TCP and USB/serial printing, SQLite and the hub's local HTTP server. The Android tablet build stays for venues without a PC. Phones stay on Expo. Only storage, printer transport and the hub sit behind platform adapters; screens and logic are shared. Olt approved Electron as a heavy dependency.
+**Why:** Owners won't replace a working PC with a tablet, and "keep your hardware" sells. Android apps don't run on Windows, and a browser can't open raw printer sockets, serve the LAN or reach USB devices. Electron is the most established option with easy Node access to all three. Tauri is lighter but less boring. An always-on, often wired PC is also a better hub than a tablet. To validate with pilots: Windows versions (Electron needs 10+), USB versus LAN printers, and how common the PC setup really is (open question 5).
+
+## 2026-11-13 — Explore the venue's hardware fiscal printer as a fiscal provider
+**Decision:** Add `HardwareFiscalPrinterProvider` as a candidate M7 path: the hub drives the venue's existing certified fiscal printer (e.g. Datecs FP-700), which does the fiscalization. Nothing is built until AI 01/2026 is confirmed to allow it with our software, the end of the hardware transition is known, and we have each model's command protocol (open question 12).
+**Why:** Many venues already have a registered fiscal printer on the counter PC. Driving it could make pilots legal without the missing SEF spec or our own certification, and it fits the hub design, since issuing happens in one place.
+
+## 2026-11-13 — Only public regulation documents go in the repo
+**Decision:** `docs/regulation/` holds public ATK and Ministry publications. Vendor manuals (such as the Datecs FP-700 guide) stay out of git because the repository is public; we record the model and where to get the manual instead.
+**Why:** Government publications may be shared. A vendor's copyrighted manual in a public repo is redistribution we have no right to.
