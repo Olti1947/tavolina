@@ -23,8 +23,8 @@ class TavolinaApplicationTests {
 
     @Test
     void flywayAppliesV1() {
-        Boolean success = jdbc.queryForObject(
-                "select success from flyway_schema_history where version = '1'", Boolean.class);
+        Boolean success =
+                jdbc.queryForObject("select success from flyway_schema_history where version = '1'", Boolean.class);
         assertThat(success).isTrue();
     }
 

@@ -8,6 +8,12 @@ Modules talk to each other only through public service interfaces or domain even
 through another module's repositories. That keeps the boundaries clean enough to split a module
 (for example `fiscal`) into its own service later.
 
+## JDK
+
+Build with **JDK 21**. The Makefile picks it automatically on macOS. When calling `./mvnw` directly
+with a newer default JDK, run `export JAVA_HOME=$(/usr/libexec/java_home -v 21)` first; otherwise
+the enforcer stops the build, because palantir-java-format breaks on newer JDKs.
+
 ## Run
 
 `make dev` from the repo root starts Postgres and the API with the settings from the root `.env`.
@@ -33,6 +39,10 @@ Hibernate only validates (`ddl-auto: validate`). Never edit an applied migration
 ```sh
 ./mvnw verify
 ```
+
+`verify` also checks formatting (Spotless with palantir-java-format); `./mvnw spotless:apply`
+fixes it. It also rewrites `packages/api-client/openapi.json` from the running app (see
+`make api-client`).
 
 Tests use Testcontainers, so Docker must be running. They start the same `postgres:16.10-alpine`
 image as `infra/docker-compose.yml`.

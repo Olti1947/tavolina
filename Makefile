@@ -5,11 +5,19 @@
 -include .env
 export
 
+# The API builds with JDK 21 (see docs/decisions.md). On macOS, use it even if a newer JDK is the default.
+ifeq ($(shell uname),Darwin)
+JDK21 := $(shell /usr/libexec/java_home -v 21 2>/dev/null)
+ifneq ($(JDK21),)
+export JAVA_HOME := $(JDK21)
+endif
+endif
+
 # Compose looks for .env next to the compose file, so pass the root .env explicitly.
 COMPOSE := docker compose $(if $(wildcard .env),--env-file .env) -f infra/docker-compose.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help dev db db-reset psql stop api-client
+.PHONY: help dev db db-reset psql stop api-client lint format test
 
 help: ## Show available commands
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-9s %s\n", $$1, $$2}'
@@ -42,3 +50,17 @@ stop: ## Stop the database (data is kept)
 api-client: ## Export the OpenAPI spec from the API and regenerate packages/api-client (needs Docker)
 	cd apps/api && ./mvnw -q test -Dtest=OpenApiSpecExportTest -Dsurefire.failIfNoSpecifiedTests=false
 	npm run generate -w @tavolina/api-client
+
+lint: ## Lint and format-check everything (ESLint, Prettier, TS types, Spotless)
+	npm run lint
+	npm run format:check
+	npm run typecheck
+	cd apps/api && ./mvnw -q spotless:check
+
+format: ## Format all code (Prettier and Spotless)
+	npm run format
+	cd apps/api && ./mvnw -q spotless:apply
+
+test: ## Run every test suite (TS workspaces, then the API; the API needs Docker)
+	npm test
+	cd apps/api && ./mvnw -q verify
