@@ -1,21 +1,22 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { App, layoutFor } from './App';
+import { App, isTabletLayout } from './App';
 import { i18n } from './i18n';
 import { PhoneShell } from './layouts/phone/PhoneShell';
 import { TabletShell } from './layouts/tablet/TabletShell';
 
 const withI18n = (ui: ReactElement) => <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>;
 
-describe('layoutFor', () => {
+describe('isTabletLayout', () => {
   it.each([
-    [412, 915, 'phone'],
-    [915, 412, 'phone'],
-    [1280, 800, 'tablet'],
-    [800, 1280, 'tablet'],
-  ] as const)('%i x %i dp → %s', (width, height, layout) => {
-    expect(layoutFor(width, height)).toBe(layout);
+    [412, 915, false],
+    [915, 412, false],
+    [1280, 800, true],
+    [800, 1280, true],
+    [1024, 768, true],
+  ])('%i x %i dp → %s', (width, height, expected) => {
+    expect(isTabletLayout(width, height)).toBe(expected);
   });
 });
 

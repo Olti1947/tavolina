@@ -8,21 +8,19 @@ import { TabletShell } from './layouts/tablet/TabletShell';
 /** Shortest side, in dp, from which the counter (tablet) layout is used. */
 export const TABLET_MIN_SHORTEST_SIDE = 600;
 
-export type Layout = 'tablet' | 'phone';
-
 /**
  * Placeholder: from M1/M2 the layout follows the paired device's kind (COUNTER or HANDHELD,
  * CLAUDE.md section 5.1), not the screen size.
  */
-export function layoutFor(width: number, height: number): Layout {
-  return Math.min(width, height) >= TABLET_MIN_SHORTEST_SIDE ? 'tablet' : 'phone';
+export function isTabletLayout(width: number, height: number): boolean {
+  return Math.min(width, height) >= TABLET_MIN_SHORTEST_SIDE;
 }
 
 export function App() {
   const { width, height } = useWindowDimensions();
   return (
     <I18nextProvider i18n={i18n}>
-      {layoutFor(width, height) === 'tablet' ? <TabletShell /> : <PhoneShell />}
+      {isTabletLayout(width, height) ? <TabletShell /> : <PhoneShell />}
       <StatusBar style="auto" />
     </I18nextProvider>
   );
