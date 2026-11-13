@@ -1,0 +1,332 @@
+{
+  "_comment": "Shared by the Java (apps/api) and TS (packages/shared) VAT tests. Prices are VAT-inclusive cents. net = round_half_up(gross * 10000 / (10000 + bps)), vat = gross - net; sums are per line, then per rate. Any change to the math starts with a new case here.",
+  "lines": [
+    {
+      "gross": 0,
+      "bps": 1800,
+      "net": 0,
+      "vat": 0,
+      "note": "zero amount"
+    },
+    {
+      "gross": 1,
+      "bps": 1800,
+      "net": 1,
+      "vat": 0,
+      "note": "1 cent: net rounds up, no VAT"
+    },
+    {
+      "gross": 2,
+      "bps": 1800,
+      "net": 2,
+      "vat": 0,
+      "note": "2 cents"
+    },
+    {
+      "gross": 3,
+      "bps": 1800,
+      "net": 3,
+      "vat": 0,
+      "note": "3 cents: still no VAT"
+    },
+    {
+      "gross": 4,
+      "bps": 1800,
+      "net": 3,
+      "vat": 1,
+      "note": "4 cents: smallest amount with VAT at 18%"
+    },
+    {
+      "gross": 59,
+      "bps": 1800,
+      "net": 50,
+      "vat": 9,
+      "note": "59 cents: exact 50 net"
+    },
+    {
+      "gross": 100,
+      "bps": 1800,
+      "net": 85,
+      "vat": 15,
+      "note": "macchiato at 1,00 €"
+    },
+    {
+      "gross": 118,
+      "bps": 1800,
+      "net": 100,
+      "vat": 18,
+      "note": "1,18 €: exact 1,00 € net"
+    },
+    {
+      "gross": 150,
+      "bps": 1800,
+      "net": 127,
+      "vat": 23,
+      "note": "macchiato at 1,50 €"
+    },
+    {
+      "gross": 250,
+      "bps": 1800,
+      "net": 212,
+      "vat": 38,
+      "note": "2,50 €"
+    },
+    {
+      "gross": 1000,
+      "bps": 1800,
+      "net": 847,
+      "vat": 153,
+      "note": "10,00 €"
+    },
+    {
+      "gross": 9999,
+      "bps": 1800,
+      "net": 8474,
+      "vat": 1525,
+      "note": "99,99 €"
+    },
+    {
+      "gross": 123450,
+      "bps": 1800,
+      "net": 104619,
+      "vat": 18831,
+      "note": "1.234,50 €"
+    },
+    {
+      "gross": 200000,
+      "bps": 1800,
+      "net": 169492,
+      "vat": 30508,
+      "note": "2.000,00 €: the cash ceiling"
+    },
+    {
+      "gross": 19999999,
+      "bps": 1800,
+      "net": 16949152,
+      "vat": 3050847,
+      "note": "199.999,99 €: large amount"
+    },
+    {
+      "gross": 0,
+      "bps": 800,
+      "net": 0,
+      "vat": 0,
+      "note": "zero amount"
+    },
+    {
+      "gross": 1,
+      "bps": 800,
+      "net": 1,
+      "vat": 0,
+      "note": "1 cent"
+    },
+    {
+      "gross": 2,
+      "bps": 800,
+      "net": 2,
+      "vat": 0,
+      "note": "2 cents"
+    },
+    {
+      "gross": 3,
+      "bps": 800,
+      "net": 3,
+      "vat": 0,
+      "note": "3 cents"
+    },
+    {
+      "gross": 6,
+      "bps": 800,
+      "net": 6,
+      "vat": 0,
+      "note": "6 cents: still no VAT"
+    },
+    {
+      "gross": 7,
+      "bps": 800,
+      "net": 6,
+      "vat": 1,
+      "note": "7 cents: smallest amount with VAT at 8%"
+    },
+    {
+      "gross": 27,
+      "bps": 800,
+      "net": 25,
+      "vat": 2,
+      "note": "27 cents: exact 25 net"
+    },
+    {
+      "gross": 100,
+      "bps": 800,
+      "net": 93,
+      "vat": 7,
+      "note": "1,00 €"
+    },
+    {
+      "gross": 108,
+      "bps": 800,
+      "net": 100,
+      "vat": 8,
+      "note": "1,08 €: exact 1,00 € net"
+    },
+    {
+      "gross": 150,
+      "bps": 800,
+      "net": 139,
+      "vat": 11,
+      "note": "1,50 €"
+    },
+    {
+      "gross": 9999,
+      "bps": 800,
+      "net": 9258,
+      "vat": 741,
+      "note": "99,99 €"
+    },
+    {
+      "gross": 123450,
+      "bps": 800,
+      "net": 114306,
+      "vat": 9144,
+      "note": "1.234,50 €"
+    },
+    {
+      "gross": 19999999,
+      "bps": 800,
+      "net": 18518518,
+      "vat": 1481481,
+      "note": "199.999,99 €: large amount"
+    },
+    {
+      "gross": 100,
+      "bps": 0,
+      "net": 100,
+      "vat": 0,
+      "note": "0% rate: no VAT"
+    }
+  ],
+  "sums": [
+    {
+      "note": "per-line split differs from splitting the total (6 cents would give net 5, VAT 1)",
+      "lines": [
+        {
+          "gross": 3,
+          "bps": 1800
+        },
+        {
+          "gross": 3,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "1800": {
+          "gross": 6,
+          "net": 6,
+          "vat": 0
+        }
+      }
+    },
+    {
+      "note": "two macchiatos at 18% and food at 8%",
+      "lines": [
+        {
+          "gross": 150,
+          "bps": 1800
+        },
+        {
+          "gross": 150,
+          "bps": 1800
+        },
+        {
+          "gross": 250,
+          "bps": 800
+        }
+      ],
+      "byRate": {
+        "1800": {
+          "gross": 300,
+          "net": 254,
+          "vat": 46
+        },
+        "800": {
+          "gross": 250,
+          "net": 231,
+          "vat": 19
+        }
+      }
+    },
+    {
+      "note": "seven 1-cent lines: per-line rounding accumulates",
+      "lines": [
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        },
+        {
+          "gross": 1,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "1800": {
+          "gross": 7,
+          "net": 7,
+          "vat": 0
+        }
+      }
+    },
+    {
+      "note": "mixed rates in any order",
+      "lines": [
+        {
+          "gross": 100,
+          "bps": 1800
+        },
+        {
+          "gross": 100,
+          "bps": 800
+        },
+        {
+          "gross": 100,
+          "bps": 1800
+        },
+        {
+          "gross": 100,
+          "bps": 800
+        }
+      ],
+      "byRate": {
+        "1800": {
+          "gross": 200,
+          "net": 170,
+          "vat": 30
+        },
+        "800": {
+          "gross": 200,
+          "net": 186,
+          "vat": 14
+        }
+      }
+    }
+  ]
+}
