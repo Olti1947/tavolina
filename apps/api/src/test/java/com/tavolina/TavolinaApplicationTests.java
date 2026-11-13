@@ -6,27 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 /** Smoke test: the app boots against a real Postgres 16, Flyway runs V1, and the API docs are served. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(TestcontainersConfig.class)
 class TavolinaApplicationTests {
-
-    @TestConfiguration(proxyBeanMethods = false)
-    static class Containers {
-
-        @Bean
-        @ServiceConnection
-        PostgreSQLContainer<?> postgres() {
-            // Same image as infra/docker-compose.yml.
-            return new PostgreSQLContainer<>("postgres:16.10-alpine");
-        }
-    }
 
     @Autowired
     JdbcTemplate jdbc;
@@ -36,8 +23,8 @@ class TavolinaApplicationTests {
 
     @Test
     void flywayAppliesV1() {
-        Boolean success = jdbc.queryForObject(
-                "select success from flyway_schema_history where version = '1'", Boolean.class);
+        Boolean success =
+                jdbc.queryForObject("select success from flyway_schema_history where version = '1'", Boolean.class);
         assertThat(success).isTrue();
     }
 
