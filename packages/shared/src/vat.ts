@@ -27,10 +27,7 @@ export interface VatRateTotal {
 /**
  * Splits a VAT-inclusive amount: net = round_half_up(gross * 10000 / (10000 + bps)), vat = gross - net.
  * Integer math only. Negative amounts round symmetrically (half away from zero).
- * The receipt examples in ATK's Technical and Functional Requirements (Annex B and F) agree with
- * this rule; they are in fixtures/vat-cases.json.
- * TODO(fiscal-spec): the examples can't tell rounding per line from rounding per rate total. We
- * round per line; confirm against the "EFS Implementation Specifications" once we have it.
+ * Call it once per VAT rate total (see sumByRate), not per line.
  */
 export function splitVat(gross: Cents, bps: number): VatSplit {
   assertCents(gross);
@@ -45,16 +42,22 @@ export function splitVat(gross: Cents, bps: number): VatSplit {
   return { net, vat: gross - net };
 }
 
-/** Splits each line, then sums per rate. Keys are basis points as strings. */
+/**
+ * Adds the gross of all lines per rate, then splits each rate total once. Keys are basis points
+ * as strings. Line grosses must already include any discount.
+ * Per rate, not per line: ATK's receipt example in Annex F, p. 81 (fixtures/vat-cases.json) only
+ * works this way; per-line rounding gives 1.09 instead of the printed 1.08.
+ * TODO(fiscal-spec): confirm against the "EFS Implementation Specifications" once we have it.
+ */
 export function sumByRate(lines: readonly VatLine[]): Record<string, VatRateTotal> {
-  const totals: Record<string, VatRateTotal> = {};
+  const grossByRate = new Map<number, Cents>();
   for (const line of lines) {
-    const { net, vat } = splitVat(line.gross, line.bps);
-    const key = String(line.bps);
-    const total = (totals[key] ??= { gross: 0, net: 0, vat: 0 });
-    total.gross += line.gross;
-    total.net += net;
-    total.vat += vat;
+    assertCents(line.gross);
+    grossByRate.set(line.bps, (grossByRate.get(line.bps) ?? 0) + line.gross);
+  }
+  const totals: Record<string, VatRateTotal> = {};
+  for (const [bps, gross] of grossByRate) {
+    totals[String(bps)] = { gross, ...splitVat(gross, bps) };
   }
   return totals;
 }
