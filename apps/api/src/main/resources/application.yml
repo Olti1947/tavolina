@@ -1,0 +1,35 @@
+# Defaults match the root .env.example, so the API runs against `make db` with no extra setup.
+server:
+  port: ${API_PORT:8080}
+
+spring:
+  application:
+    name: tavolina-api
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:tavolina}
+    username: ${POSTGRES_USER:tavolina}
+    password: ${POSTGRES_PASSWORD:change-me}
+  jpa:
+    # Flyway owns the schema; Hibernate only checks that entities match it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # Timestamps are stored in UTC (CLAUDE.md section 5).
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -331,7 +331,7 @@ Each milestone ends with green tests, `docs/demo-<milestone>.md` (steps for Olt 
 
 ### M0 — Scaffolding
 - [ ] Monorepo layout from section 4, root README with one-command dev start.
-- [ ] Docker Compose with Postgres 16; Spring Boot runs Flyway V1.
+- [x] Docker Compose with Postgres 16; Spring Boot runs Flyway V1.
 - [ ] Expo device app, `apps/admin`, `packages/api-client` and `packages/shared` build; linting and formatting for TS and Java.
 - [ ] `packages/shared/fixtures/vat-cases.json` seeded, with a Java test and a TS test that both run it (section 11).
 - [ ] `tools/fake-printer` (section 6.7): TCP on 9100, live receipt view at `localhost:9180`, offline/paper-out/slow switches, multiple instances.
