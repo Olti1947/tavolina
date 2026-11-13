@@ -1,0 +1,10 @@
+# Java has its own formatter (Spotless).
+apps/api/
+# Generated: never formatted by hand.
+packages/api-client/openapi.json
+packages/api-client/src/schema.d.ts
+package-lock.json
+CLAUDE.md
+# Docs and infra are hand-formatted; Prettier covers code.
+*.md
+infra/
