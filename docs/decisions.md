@@ -64,4 +64,4 @@ ADR-lite log: date, decision, why. Newest at the bottom.
 
 ## 2026-11-13 — Device layout is chosen by screen size until pairing exists
 **Decision:** `apps/device` shows the tablet (counter) layout when the shortest side is ≥ 600 dp, and the phone (waiter) layout otherwise. The admin PWA manifest waits for M4.
-**Why:** Device kind (`COUNTER | HANDHELD`) comes from pairing in M1/M2. Until then, screen size lets both layouts run on emulators.
+**Why:** Device kind (`COUNTER | HANDHELD`) comes from pairing in M1/M2. Until then, screen size lets both layouts run on emulators. The same rule gives the counter layout in the web build, which the Electron desktop counter will load (`npx expo export -p web` already works).

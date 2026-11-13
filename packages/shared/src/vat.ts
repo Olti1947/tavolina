@@ -27,7 +27,10 @@ export interface VatRateTotal {
 /**
  * Splits a VAT-inclusive amount: net = round_half_up(gross * 10000 / (10000 + bps)), vat = gross - net.
  * Integer math only. Negative amounts round symmetrically (half away from zero).
- * TODO(fiscal-spec): confirm the required rounding against the ATK specification.
+ * The receipt examples in ATK's Technical and Functional Requirements (Annex B and F) agree with
+ * this rule; they are in fixtures/vat-cases.json.
+ * TODO(fiscal-spec): the examples can't tell rounding per line from rounding per rate total. We
+ * round per line; confirm against the "EFS Implementation Specifications" once we have it.
  */
 export function splitVat(gross: Cents, bps: number): VatSplit {
   assertCents(gross);

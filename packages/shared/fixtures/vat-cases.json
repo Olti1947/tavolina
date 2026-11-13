@@ -327,6 +327,64 @@
           "vat": 14
         }
       }
+    },
+    {
+      "note": "ATK example: Technical and Functional Requirements, Annex B, p. 57 (VAT 8%: 0.37, 18%: 1.21)",
+      "lines": [
+        {
+          "gross": 500,
+          "bps": 800
+        },
+        {
+          "gross": 450,
+          "bps": 1800
+        },
+        {
+          "gross": 340,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 500,
+          "net": 463,
+          "vat": 37
+        },
+        "1800": {
+          "gross": 790,
+          "net": 669,
+          "vat": 121
+        }
+      }
+    },
+    {
+      "note": "ATK example: Technical and Functional Requirements, Annex F, p. 79 (VAT 8%: 0.37, 18%: 1.21)",
+      "lines": [
+        {
+          "gross": 500,
+          "bps": 800
+        },
+        {
+          "gross": 452,
+          "bps": 1800
+        },
+        {
+          "gross": 340,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 500,
+          "net": 463,
+          "vat": 37
+        },
+        "1800": {
+          "gross": 792,
+          "net": 671,
+          "vat": 121
+        }
+      }
     }
   ]
 }
