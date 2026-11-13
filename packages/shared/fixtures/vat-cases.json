@@ -1,5 +1,5 @@
 {
-  "_comment": "Shared by the Java (apps/api) and TS (packages/shared) VAT tests. Prices are VAT-inclusive cents. net = round_half_up(gross * 10000 / (10000 + bps)), vat = gross - net; sums are per line, then per rate. Any change to the math starts with a new case here.",
+  "_comment": "Shared by the Java (apps/api) and TS (packages/shared) VAT tests. Prices are VAT-inclusive cents. net = round_half_up(gross * 10000 / (10000 + bps)), vat = gross - net. Sums add gross per rate first, then split each rate total once (ATK Annex F p. 81 rules out splitting per line). Line grosses in 'sums' are after any discount. Any change to the math starts with a new case here.",
   "lines": [
     {
       "gross": 0,
@@ -207,7 +207,7 @@
   ],
   "sums": [
     {
-      "note": "per-line split differs from splitting the total (6 cents would give net 5, VAT 1)",
+      "note": "two 3-cent lines: split per rate total, so 6 cents gives VAT 1 (per line would give 0)",
       "lines": [
         {
           "gross": 3,
@@ -221,8 +221,8 @@
       "byRate": {
         "1800": {
           "gross": 6,
-          "net": 6,
-          "vat": 0
+          "net": 5,
+          "vat": 1
         }
       }
     },
@@ -256,7 +256,7 @@
       }
     },
     {
-      "note": "seven 1-cent lines: per-line rounding accumulates",
+      "note": "seven 1-cent lines: no per-line rounding loss (per line would give VAT 0)",
       "lines": [
         {
           "gross": 1,
@@ -290,13 +290,13 @@
       "byRate": {
         "1800": {
           "gross": 7,
-          "net": 7,
-          "vat": 0
+          "net": 6,
+          "vat": 1
         }
       }
     },
     {
-      "note": "mixed rates in any order",
+      "note": "mixed rates in any order (per line would give 30 and 14)",
       "lines": [
         {
           "gross": 100,
@@ -318,13 +318,13 @@
       "byRate": {
         "1800": {
           "gross": 200,
-          "net": 170,
-          "vat": 30
+          "net": 169,
+          "vat": 31
         },
         "800": {
           "gross": 200,
-          "net": 186,
-          "vat": 14
+          "net": 185,
+          "vat": 15
         }
       }
     },
@@ -383,6 +383,139 @@
           "gross": 792,
           "net": 671,
           "vat": 121
+        }
+      }
+    },
+    {
+      "note": "ATK example: Technical and Functional Requirements, Annex F, p. 81, 10% discount on the total, spread over the lines (VAT 8%: 0.33, 18%: 1.08). Per line would give 1.09, so this case fixes rounding per rate total",
+      "lines": [
+        {
+          "gross": 450,
+          "bps": 800
+        },
+        {
+          "gross": 405,
+          "bps": 1800
+        },
+        {
+          "gross": 306,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 450,
+          "net": 417,
+          "vat": 33
+        },
+        "1800": {
+          "gross": 711,
+          "net": 603,
+          "vat": 108
+        }
+      }
+    },
+    {
+      "note": "ATK example: Annex F, p. 80, 10% discount on one item (VAT 8%: 0.33, 18%: 1.21)",
+      "lines": [
+        {
+          "gross": 450,
+          "bps": 800
+        },
+        {
+          "gross": 450,
+          "bps": 1800
+        },
+        {
+          "gross": 340,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 450,
+          "net": 417,
+          "vat": 33
+        },
+        "1800": {
+          "gross": 790,
+          "net": 669,
+          "vat": 121
+        }
+      }
+    },
+    {
+      "note": "ATK example: Annex B, p. 59, 20% discount on the subtotal, spread over the rates (VAT 8%: 0.30, 18%: 0.55)",
+      "lines": [
+        {
+          "gross": 400,
+          "bps": 800
+        },
+        {
+          "gross": 360,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 400,
+          "net": 370,
+          "vat": 30
+        },
+        "1800": {
+          "gross": 360,
+          "net": 305,
+          "vat": 55
+        }
+      }
+    },
+    {
+      "note": "ATK example: Annex B, p. 59, value discount on the subtotal given per rate, 1.00 each (VAT 8%: 0.85, 18%: 0.31)",
+      "lines": [
+        {
+          "gross": 1150,
+          "bps": 800
+        },
+        {
+          "gross": 200,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 1150,
+          "net": 1065,
+          "vat": 85
+        },
+        "1800": {
+          "gross": 200,
+          "net": 169,
+          "vat": 31
+        }
+      }
+    },
+    {
+      "note": "ATK example: Annex B, p. 60, all payment types (VAT 8%: 1.85, 18%: 2.29)",
+      "lines": [
+        {
+          "gross": 2500,
+          "bps": 800
+        },
+        {
+          "gross": 1500,
+          "bps": 1800
+        }
+      ],
+      "byRate": {
+        "800": {
+          "gross": 2500,
+          "net": 2315,
+          "vat": 185
+        },
+        "1800": {
+          "gross": 1500,
+          "net": 1271,
+          "vat": 229
         }
       }
     }

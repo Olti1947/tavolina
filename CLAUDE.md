@@ -430,7 +430,7 @@ Starts only when Olt says the hardware has arrived: an 80 mm LAN/Wi-Fi thermal p
 ## 11. Testing and quality bar
 
 - **Backend:** unit tests for totals/VAT math, integration tests with Testcontainers for every endpoint, tenant-isolation tests, idempotency tests, ownership-rule tests.
-- **VAT math:** prices are VAT-inclusive. Per line: `net = round(gross * 10000 / (10000 + bps))`, `vat = gross - net`; sum per rate; round half-up to the cent. Confirm the required rounding against the ATK spec (`TODO(fiscal-spec)`) and keep it in one function **per language** (Java in `apps/api`, TS in `packages/shared`). Devices compute totals offline and the server recomputes and rejects mismatches, so the two must agree to the cent: both test suites run the same cases from `packages/shared/fixtures/vat-cases.json` (gross, bps, expected net and VAT, per-rate sums, rounding edge cases). Any change to the math starts by adding a case there.
+- **VAT math:** prices are VAT-inclusive. Add up the gross (after discounts) **per VAT rate first**, then split each rate total once: `net = round_half_up(gross * 10000 / (10000 + bps))`, `vat = gross - net`. Never round VAT per line: ATK's receipt example in Annex F, p. 81 only works per rate total. Discounts on the subtotal are spread over the rates in proportion to their gross (Annex B, p. 59; Annex F, p. 81); how the leftover cent is assigned is open question 13. Confirm against the "EFS Implementation Specifications" (`TODO(fiscal-spec)`) and keep it in one function **per language** (Java in `apps/api`, TS in `packages/shared`). Devices compute totals offline and the server recomputes and rejects mismatches, so the two must agree to the cent: both test suites run the same cases from `packages/shared/fixtures/vat-cases.json` (gross, bps, expected net and VAT, per-rate sums, rounding edge cases). Any change to the math starts by adding a case there.
 - **Device:** tests for the outbox, sync, ownership rules, the print queue (against `tools/fake-printer`) and the fiscal mock.
 - **Web:** component tests and Playwright end-to-end tests for owner setup (M1) and dashboards (M4).
 - No milestone is done with failing or skipped tests.
@@ -451,6 +451,7 @@ Starts only when Olt says the hardware has arrived: an 80 mm LAN/Wi-Fi thermal p
 10. Owner alerts: is web push enough, or do owners need alerts on Viber/WhatsApp (and do those offer a usable business API at our price point)?
 11. Monitoring individual waiters (per-waiter sales, voids, cash held): anything in Kosovo labour or data-protection law we must tell staff or respect?
 12. Hardware fiscal printer path: may our (uncertified) software drive a venue's certified fiscal printer under AI 01/2026, when does the hardware transition end, and can we get the command protocol for the common models (Datecs FP-700 and others)?
+13. Discounts on the subtotal: ATK's examples spread a percentage discount over the VAT rates in proportion (Annex B p. 59, Annex F p. 81) but show a value discount as a separate amount per rate (Annex B p. 59). Which rule applies to each, how is the leftover cent assigned, and must it be spread per line or only per rate?
 
 ---
 

@@ -85,3 +85,7 @@ ADR-lite log: date, decision, why. Newest at the bottom.
 ## 2026-11-13 — Only public regulation documents go in the repo
 **Decision:** `docs/regulation/` holds public ATK and Ministry publications. Vendor manuals (such as the Datecs FP-700 guide) stay out of git because the repository is public; we record the model and where to get the manual instead.
 **Why:** Government publications may be shared. A vendor's copyrighted manual in a public repo is redistribution we have no right to.
+
+## 2026-11-13 — VAT is rounded per rate total, not per line
+**Decision:** `sumByRate` adds the gross of all lines per VAT rate (after discounts), then splits each rate total once with round half-up. This replaces rounding per line and summing. Five more ATK receipt examples are in `vat-cases.json`.
+**Why:** Annex F, p. 81 (10% off the total) prints VAT 18% = 1.08. Rounding per rate gives 1.08, and per line gives 1.09. Every other ATK example matches both methods, so this is the only one that decides it. Rounding per line would also lose VAT on cheap items (seven 1-cent lines give no VAT). The exact rule stays `TODO(fiscal-spec)` until we have the "EFS Implementation Specifications". How subtotal discounts are split is open question 13.
