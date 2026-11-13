@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Tavolina",
+    "slug": "tavolina",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.tavolina.device"
+    },
+    "ios": {
+      "bundleIdentifier": "com.tavolina.device",
+      "supportsTablet": true
+    }
+  }
+}

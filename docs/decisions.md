@@ -37,3 +37,31 @@ ADR-lite log: date, decision, why. Newest at the bottom.
 ## 2026-11-12 — Spring Boot 3.5 for the API
 **Decision:** `apps/api` uses Spring Boot 3.5.x (3.5.16), springdoc-openapi 2.8, Java 21 as the compile target, and a Maven wrapper of the `only-script` type, so no wrapper jar is committed. Spring Security, JWT and WebSocket are added with the features that need them (M1 auth, M3 live tables), not in the scaffold.
 **Why:** CLAUDE.md specifies Spring Boot 3.x. Boot 4 exists, but moving to it (Jakarta EE 11, Spring Framework 7, springdoc 3) is a separate decision to take before the codebase grows. Adding Security now would lock every endpoint before there is any auth to configure.
+
+## 2026-11-13 — npm workspaces, Node 22
+**Decision:** The TS projects (`apps/device`, `apps/admin`, `packages/*`, `tools/*`) are npm workspaces with one root `package-lock.json`. Node 22 is pinned in `.nvmrc` and `engines`. React is pinned to the exact version the current Expo SDK expects (19.3.0) in both apps.
+**Why:** npm ships with Node, so there's nothing extra to install locally or in CI, and Expo detects npm workspaces with no custom Metro config. One React version avoids the "two copies of React" class of bugs in a hoisted install. Expo SDK 58 and Vite 8 need Node ≥ 20.19.
+
+## 2026-11-13 — `packages/shared` ships TypeScript source
+**Decision:** `@tavolina/shared` and `@tavolina/api-client` point `main` at `src/index.ts`; Vite and Metro compile them with each app. There is no separate build step.
+**Why:** No watch process or stale `dist/` during development. Either package can gain a build step later without changing any import.
+
+## 2026-11-13 — Money and date formatting libraries
+**Decision:** `formatEur` is hand-written with integer math (`1.234,50 €`). Dates use `date-fns-tz` (`formatInTimeZone`) for `dd.MM.yyyy` / `HH:mm` in `Europe/Belgrade`.
+**Why:** `Intl.NumberFormat` output differs between Hermes and browsers (separators, spaces), and money must print identically on receipts and in reports. `date-fns-tz` is small and maintained, and it relies only on `Intl.DateTimeFormat` time-zone support, which Hermes has on Android.
+
+## 2026-11-13 — API client: exported spec + openapi-typescript + openapi-fetch
+**Decision:** `OpenApiSpecExportTest` (`apps/api`) boots the app on Testcontainers and writes `packages/api-client/openapi.json`. `openapi-typescript` generates `src/schema.d.ts`, and `openapi-fetch` is the runtime client. Both generated files are committed; `make api-client` regenerates them and CI (#6) fails on drift.
+**Why:** No running server is needed to generate the client, and the TS apps build without Java. These are types plus a ~6 kB fetch wrapper rather than generated classes, so there is less code to review and nothing heavy on the device.
+
+## 2026-11-13 — Java formatting with Spotless + palantir-java-format, JDK 21 builds
+**Decision:** Spotless runs palantir-java-format (4-space indent, matching `.editorconfig`) and checks it in `verify`. A Maven enforcer rule requires JDK 21, and the Makefile selects JDK 21 on macOS.
+**Why:** palantir keeps the existing 4-space style, which google-java-format does not. It depends on javac internals and fails on JDK 27 (`NoSuchFieldError` in `JCCompilationUnit`). JDK 21 is our target anyway, so failing fast with a clear message beats a cryptic formatter error.
+
+## 2026-11-13 — Lint and format scope
+**Decision:** One root ESLint 9 flat config (typescript-eslint, react-hooks, Prettier compat) covers every TS workspace; `eslint-config-expo` is not added for now. Prettier formats code and JSON only. Markdown, `infra/` and generated files are left as written.
+**Why:** One config keeps rules consistent across apps. Reflowing hand-written docs and Compose files adds noisy diffs and catches no bugs.
+
+## 2026-11-13 — Device layout is chosen by screen size until pairing exists
+**Decision:** `apps/device` shows the tablet (counter) layout when the shortest side is ≥ 600 dp, and the phone (waiter) layout otherwise. The admin PWA manifest waits for M4.
+**Why:** Device kind (`COUNTER | HANDHELD`) comes from pairing in M1/M2. Until then, screen size lets both layouts run on emulators. The same rule gives the counter layout in the web build, which the Electron desktop counter will load (`npx expo export -p web` already works).

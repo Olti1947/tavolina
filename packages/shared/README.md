@@ -9,4 +9,12 @@ TypeScript domain logic used by both `apps/device` and `apps/admin`:
 
 Devices compute totals offline and the server recomputes them and rejects mismatches, so the TS
 and Java implementations must agree to the cent. `fixtures/` holds the cases both test suites run.
-Setup arrives in #3.
+`fixtures/vat-cases.json` expectations were computed with an independent `Decimal` half-up
+oracle, not with this code.
+
+```sh
+npm test -w @tavolina/shared        # Vitest
+npm run typecheck -w @tavolina/shared
+```
+
+The package ships TypeScript source (no build step); Vite and Metro compile it with the app.

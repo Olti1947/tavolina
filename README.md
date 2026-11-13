@@ -8,12 +8,15 @@ The full product and engineering brief is in [CLAUDE.md](CLAUDE.md).
 
 ## Quick start
 
-Prerequisites: Docker, Java 21, Node.js LTS, and Android Studio (for the emulator).
+Prerequisites: Docker, JDK 21, Node.js 22 (`nvm use` reads `.nvmrc`), and Android Studio (for the emulator).
 
 ```sh
 cp .env.example .env
+npm install   # installs every TS workspace (apps/device, apps/admin, packages/*)
 make dev      # starts Postgres, the API, the admin app and the fake printer
 make stop     # stops Postgres
+make lint     # ESLint, Prettier, TS types, Spotless
+make test     # every test suite (the API tests need Docker)
 make help     # lists all commands
 ```
 
