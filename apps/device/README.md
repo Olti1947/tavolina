@@ -13,4 +13,15 @@ Expo (React Native, TypeScript) app for Android: **one app, two layouts**.
 
 Both layouts share the offline engine, printing and fiscal code, so those rules are written once.
 Needs an Expo **development build** (not Expo Go) because TCP sockets need a native module.
-Project setup arrives in #3.
+The development build and emulator profiles arrive in #5.
+
+## Run and test
+
+```sh
+npm start -w @tavolina/device     # Metro; press `w` for a quick look in the browser
+npm test -w @tavolina/device      # Jest (jest-expo + Testing Library)
+```
+
+Until devices are paired (M1), `src/App.tsx` picks the layout from the screen: shortest side
+≥ 600 dp → tablet (counter), otherwise phone (waiter). Expo detects the npm workspace on its
+own, so `@tavolina/shared` resolves with no custom `metro.config.js`.
