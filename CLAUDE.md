@@ -342,7 +342,7 @@ Each milestone ends with green tests, `docs/demo-<milestone>.md` (steps for Olt 
   Note (#3): Java builds on JDK 21 (palantir-java-format breaks on newer JDKs); see `docs/decisions.md`.
 - [ ] `packages/shared/fixtures/vat-cases.json` seeded, with a Java test and a TS test that both run it (section 11).
   Note (#3): fixtures and the TS test are done; the Java implementation and test follow in #6.
-- [ ] `tools/fake-printer` (section 6.7): TCP on 9100, live receipt view at `localhost:9180`, offline/paper-out/slow switches, multiple instances.
+- [x] `tools/fake-printer` (section 6.7): TCP on 9100, live receipt view at `localhost:9180`, offline/paper-out/slow switches, multiple instances.
 - [ ] Expo development build running on the Android emulator (phone and ~10" tablet profiles), reaching the API and the fake printer via `10.0.2.2`.
 - [ ] GitHub Actions running build + tests for all apps.
 - [ ] `docs/decisions.md` and `docs/open-questions.md` created (seed from sections 7.2 and 12).

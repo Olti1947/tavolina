@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fake printer</title>
+    <style>
+      :root {
+        --bg: #e9e7e2;
+        --fg: #1d1d1b;
+        --muted: #6b6a66;
+        --paper: #fffefa;
+        --panel: #f6f5f1;
+        --line: #c9c6bd;
+        --accent: #1f5fbf;
+        --warn-bg: #fff3cd;
+        --warn-fg: #6b4e00;
+        --bad: #b42318;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1b1c1e;
+          --fg: #ecebe7;
+          --muted: #a3a29d;
+          --panel: #26272a;
+          --line: #3d3e42;
+          --accent: #7aa7ff;
+          --warn-bg: #3d3214;
+          --warn-fg: #f4d27a;
+          --bad: #ff8a80;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 16px;
+      }
+      #conn {
+        color: var(--muted);
+      }
+      #conn.down {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      main {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        overflow-x: auto;
+        align-items: flex-start;
+      }
+      .printer {
+        flex: 0 0 auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .printer h2 {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+      .printer .meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      .modes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 12px;
+      }
+      button {
+        font: inherit;
+        font-size: 12px;
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+      }
+      button[aria-pressed='true'] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .printer[data-mode='offline'] .meta .mode,
+      .printer[data-mode='paperOut'] .meta .mode,
+      .printer[data-mode='timeout'] .meta .mode {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .jobs {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .job .info {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .job.not-printed .receipt {
+        opacity: 0.35;
+      }
+      .job .not-printed-label {
+        color: var(--bad);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .warnings {
+        margin: 4px 0;
+        padding: 6px 8px;
+        border-radius: 4px;
+        background: var(--warn-bg);
+        color: var(--warn-fg);
+        font-size: 12px;
+        list-style: none;
+      }
+      .receipt {
+        /* Paper stays white in dark mode, like real paper. */
+        background: var(--paper);
+        color: #111;
+        padding: 12px 10px;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+        font:
+          13px/1.35 'Courier New',
+          ui-monospace,
+          monospace;
+        width: calc(var(--cols) * 1ch + 20px);
+        overflow: hidden;
+      }
+      .line {
+        white-space: pre;
+        min-height: 1.35em;
+      }
+      .line.center {
+        text-align: center;
+      }
+      .line.right {
+        text-align: right;
+      }
+      .line.overflow {
+        background: #fde2e1;
+      }
+      .big {
+        display: inline-block;
+        font-size: calc(var(--h) * 1em);
+        line-height: 1.1;
+        transform: scaleX(calc(var(--w) / var(--h)));
+        transform-origin: left;
+      }
+      .line.center .big {
+        transform-origin: center;
+      }
+      .line.right .big {
+        transform-origin: right;
+      }
+      .cut {
+        margin: 8px -10px;
+        border-top: 2px dashed #999;
+        color: #999;
+        font:
+          10px system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      .qr {
+        display: flex;
+        margin: 6px 0;
+      }
+      .qr.center {
+        justify-content: center;
+      }
+      .qr.right {
+        justify-content: flex-end;
+      }
+      .qr svg {
+        width: calc(var(--m) * 32px);
+        max-width: 100%;
+        height: auto;
+      }
+      details {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      details pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-width: 420px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Fake printer</h1>
+      <span id="conn">connecting…</span>
+    </header>
+    <main id="printers"></main>
+    <template id="printer-tpl">
+      <section class="printer">
+        <h2></h2>
+        <div class="meta"></div>
+        <div class="modes"></div>
+        <div class="jobs"><p class="empty">No jobs yet</p></div>
+      </section>
+    </template>
+    <script>
+      const MODES = [
+        ['online', 'Online'],
+        ['offline', 'Offline'],
+        ['paperOut', 'Paper out'],
+        ['slow', 'Slow'],
+        ['timeout', 'Timeout'],
+      ];
+      const COLUMNS = { 80: 48, 58: 32 };
+      const MAX_SHOWN = 200;
+      const root = document.getElementById('printers');
+      const conn = document.getElementById('conn');
+      const printers = new Map();
+
+      const api = (path, init) => fetch(path, init).catch(() => {});
+
+      function el(tag, props = {}, text) {
+        const node = document.createElement(tag);
+        Object.assign(node, props);
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function upsertPrinter(info) {
+        let entry = printers.get(info.name);
+        if (!entry) {
+          const node = document
+            .getElementById('printer-tpl')
+            .content.firstElementChild.cloneNode(true);
+          node.style.setProperty('--cols', COLUMNS[info.paperWidth]);
+          node.querySelector('h2').textContent = info.name;
+          const modes = node.querySelector('.modes');
+          for (const [mode, label] of MODES) {
+            const btn = el('button', { type: 'button' }, label);
+            btn.dataset.mode = mode;
+            btn.onclick = () =>
+              api(`/api/printers/${encodeURIComponent(info.name)}/mode`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ mode }),
+              });
+            modes.append(btn);
+          }
+          const clear = el('button', { type: 'button' }, 'Clear');
+          clear.onclick = () =>
+            api(`/api/printers/${encodeURIComponent(info.name)}/jobs`, { method: 'DELETE' });
+          modes.append(clear);
+          root.append(node);
+          entry = { node, jobs: node.querySelector('.jobs') };
+          printers.set(info.name, entry);
+        }
+        const { node } = entry;
+        node.dataset.mode = info.mode;
+        const label = MODES.find(([m]) => m === info.mode)[1];
+        const slow = info.mode === 'slow' ? ` (${info.slowMs} ms)` : '';
+        node.querySelector('.meta').innerHTML = '';
+        node
+          .querySelector('.meta')
+          .append(
+            `TCP :${info.port} · ${info.paperWidth} mm · `,
+            el('span', { className: 'mode' }, label + slow),
+          );
+        for (const btn of node.querySelectorAll('.modes button[data-mode]')) {
+          btn.setAttribute('aria-pressed', String(btn.dataset.mode === info.mode));
+        }
+      }
+
+      function jobNode(job) {
+        const card = el('article', { className: 'job' + (job.printed ? '' : ' not-printed') });
+        const info = el('div', { className: 'info' });
+        const time = new Date(job.receivedAt).toLocaleTimeString();
+        info.append(
+          el('span', {}, `#${job.id} · ${time}`),
+          el('span', {}, `${job.bytes} B · ${job.remote}`),
+        );
+        card.append(info);
+        if (!job.printed)
+          card.append(el('div', { className: 'not-printed-label' }, 'Not printed: out of paper'));
+        if (job.warnings.length > 0) {
+          const list = el('ul', { className: 'warnings' });
+          for (const w of job.warnings) list.append(el('li', {}, '⚠ ' + w));
+          card.append(list);
+        }
+        // Rendered on the server from the decoded job, with all text escaped there.
+        const receipt = el('div', { className: 'receipt' });
+        receipt.innerHTML = job.html;
+        card.append(receipt);
+        const raw = el('details');
+        raw.append(el('summary', {}, 'Raw bytes'), el('pre', {}, job.rawHex));
+        card.append(raw);
+        return card;
+      }
+
+      function addJob(job, atTop = true) {
+        const entry = printers.get(job.printer);
+        if (!entry) return;
+        entry.jobs.querySelector('.empty')?.remove();
+        const node = jobNode(job);
+        if (atTop) entry.jobs.prepend(node);
+        else entry.jobs.append(node);
+        while (entry.jobs.children.length > MAX_SHOWN) entry.jobs.lastElementChild.remove();
+      }
+
+      function clearJobs(name) {
+        const entry = printers.get(name);
+        if (!entry) return;
+        entry.jobs.replaceChildren(el('p', { className: 'empty' }, 'No jobs yet'));
+      }
+
+      function connect() {
+        const events = new EventSource('/events');
+        events.addEventListener('snapshot', (e) => {
+          root.replaceChildren();
+          printers.clear();
+          for (const p of JSON.parse(e.data)) {
+            upsertPrinter(p);
+            for (const job of p.jobs) addJob(job, false);
+          }
+          conn.textContent = 'live';
+          conn.className = '';
+        });
+        events.addEventListener('job', (e) => addJob(JSON.parse(e.data)));
+        events.addEventListener('printer', (e) => upsertPrinter(JSON.parse(e.data)));
+        events.addEventListener('cleared', (e) => clearJobs(JSON.parse(e.data).printer));
+        events.onerror = () => {
+          conn.textContent = 'fake printer not running – start it with make dev';
+          conn.className = 'down';
+        };
+      }
+      connect();
+    </script>
+  </body>
+</html>
