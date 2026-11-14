@@ -44,7 +44,10 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
   private readonly host: string;
   private readonly server: net.Server;
   private readonly sockets = new Set<net.Socket>();
-  private readonly timers = new Set<NodeJS.Timeout>();
+  // Connections held by `slow` (with the timer that releases them) or `timeout` (null).
+  private readonly held = new Map<net.Socket, NodeJS.Timeout | null>();
+  // Mode changes run one after another, so a double click can't interleave listen and close.
+  private modeChange: Promise<void> = Promise.resolve();
   private _jobs: Job[] = [];
   private nextId = 1;
 
@@ -87,17 +90,27 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
     this.removeAllListeners();
   }
 
-  async setMode(mode: Mode, options: { slowMs?: number } = {}): Promise<void> {
-    if (!MODES.includes(mode)) throw new Error(`Unknown mode "${mode}"`);
-    if (options.slowMs !== undefined) {
-      if (!Number.isInteger(options.slowMs) || options.slowMs < 0) {
-        throw new Error('slowMs must be a non-negative integer');
-      }
-      this._slowMs = options.slowMs;
+  setMode(mode: Mode, options: { slowMs?: number } = {}): Promise<void> {
+    if (!MODES.includes(mode)) return Promise.reject(new Error(`Unknown mode "${mode}"`));
+    const { slowMs } = options;
+    if (slowMs !== undefined && (!Number.isInteger(slowMs) || slowMs < 0)) {
+      return Promise.reject(new Error('slowMs must be a non-negative integer'));
     }
-    if (mode === this._mode) return;
+    const run = this.modeChange.then(() => this.applyMode(mode, slowMs));
+    this.modeChange = run.catch(() => {});
+    return run;
+  }
+
+  private async applyMode(mode: Mode, slowMs: number | undefined): Promise<void> {
+    const slowChanged = slowMs !== undefined && slowMs !== this._slowMs;
+    if (slowMs !== undefined) this._slowMs = slowMs;
+    if (mode === this._mode) {
+      if (slowChanged) this.emit('mode', mode);
+      return;
+    }
     if (mode === 'offline') await this.stopListening();
     else if (this._mode === 'offline') await this.listen();
+    else this.releaseHeld();
     this._mode = mode;
     this.emit('mode', mode);
   }
@@ -136,10 +149,24 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
     });
   }
 
+  // Leaving `slow` or `timeout`: delayed connections carry on now, hung ones are dropped
+  // (a hung printer that recovers has forgotten them).
+  private releaseHeld(): void {
+    for (const [socket, timer] of this.held) {
+      if (timer) {
+        clearTimeout(timer);
+        socket.resume();
+      } else {
+        socket.destroy();
+      }
+    }
+    this.held.clear();
+  }
+
   // Like pulling the plug: open connections drop too.
   private stopListening(): Promise<void> {
-    for (const timer of this.timers) clearTimeout(timer);
-    this.timers.clear();
+    for (const timer of this.held.values()) if (timer) clearTimeout(timer);
+    this.held.clear();
     for (const socket of this.sockets) socket.destroy();
     if (!this.server.listening) return Promise.resolve();
     return new Promise((resolve) => this.server.close(() => resolve()));
@@ -147,7 +174,10 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
 
   private accept(socket: net.Socket): void {
     this.sockets.add(socket);
-    socket.on('close', () => this.sockets.delete(socket));
+    socket.on('close', () => {
+      this.sockets.delete(socket);
+      this.held.delete(socket);
+    });
     socket.on('error', () => socket.destroy());
 
     const remote = `${socket.remoteAddress ?? '?'}:${socket.remotePort ?? '?'}`;
@@ -156,6 +186,7 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
 
     if (this._mode === 'timeout') {
       socket.pause();
+      this.held.set(socket, null);
       return;
     }
 
@@ -168,18 +199,27 @@ export class FakePrinter extends EventEmitter<{ job: [Job]; mode: [Mode] }> {
         if (reply !== null && socket.writable) socket.write(Buffer.from([reply]));
       }
     });
+    // A real printer prints whatever arrived, however the connection ends: a clean
+    // half-close ('end') or a reset or destroy ('close' only).
+    let stored = false;
+    const finish = () => {
+      if (stored) return;
+      stored = true;
+      this.store(Buffer.concat(chunks), remote, !paperOut);
+    };
     socket.on('end', () => {
       socket.end();
-      this.store(Buffer.concat(chunks), remote, !paperOut);
+      finish();
     });
+    socket.on('close', finish);
 
     if (this._mode === 'slow') {
       socket.pause();
       const timer = setTimeout(() => {
-        this.timers.delete(timer);
+        this.held.delete(socket);
         socket.resume();
       }, this._slowMs);
-      this.timers.add(timer);
+      this.held.set(socket, timer);
     }
   }
 

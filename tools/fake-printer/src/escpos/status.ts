@@ -35,10 +35,11 @@ export function statusReply(query: StatusQuery, { paperOut }: PaperState): numbe
 
 /** Finds status queries in a byte stream that may arrive split across TCP chunks. */
 export class StatusScanner {
-  private tail: number[] = [];
+  // At most the last two bytes of the previous chunk, when they could start a query.
+  private tail: Uint8Array = new Uint8Array(0);
 
   push(chunk: Uint8Array): StatusQuery[] {
-    const bytes = [...this.tail, ...chunk];
+    const bytes = this.tail.length > 0 ? Buffer.concat([this.tail, chunk]) : chunk;
     const queries: StatusQuery[] = [];
     let i = 0;
     for (; i < bytes.length; i++) {
@@ -53,7 +54,7 @@ export class StatusScanner {
         i += 2;
       }
     }
-    this.tail = bytes.slice(i);
+    this.tail = Uint8Array.from(bytes.subarray(i));
     return queries;
   }
 }

@@ -201,6 +201,16 @@
       .qr.right {
         justify-content: flex-end;
       }
+      .qr-error {
+        margin: 6px 0;
+        padding: 8px;
+        border: 2px dashed #b42318;
+        color: #b42318;
+        font:
+          11px system-ui,
+          sans-serif;
+        text-align: center;
+      }
       .qr svg {
         width: calc(var(--m) * 32px);
         max-width: 100%;
@@ -233,14 +243,8 @@
       </section>
     </template>
     <script>
-      const MODES = [
-        ['online', 'Online'],
-        ['offline', 'Offline'],
-        ['paperOut', 'Paper out'],
-        ['slow', 'Slow'],
-        ['timeout', 'Timeout'],
-      ];
-      const COLUMNS = { 80: 48, 58: 32 };
+      // Modes and their labels come from the server in the snapshot.
+      let modes = [];
       const MAX_SHOWN = 200;
       const root = document.getElementById('printers');
       const conn = document.getElementById('conn');
@@ -261,10 +265,10 @@
           const node = document
             .getElementById('printer-tpl')
             .content.firstElementChild.cloneNode(true);
-          node.style.setProperty('--cols', COLUMNS[info.paperWidth]);
+          node.style.setProperty('--cols', info.columns);
           node.querySelector('h2').textContent = info.name;
-          const modes = node.querySelector('.modes');
-          for (const [mode, label] of MODES) {
+          const buttons = node.querySelector('.modes');
+          for (const { mode, label } of modes) {
             const btn = el('button', { type: 'button' }, label);
             btn.dataset.mode = mode;
             btn.onclick = () =>
@@ -273,19 +277,19 @@
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({ mode }),
               });
-            modes.append(btn);
+            buttons.append(btn);
           }
           const clear = el('button', { type: 'button' }, 'Clear');
           clear.onclick = () =>
             api(`/api/printers/${encodeURIComponent(info.name)}/jobs`, { method: 'DELETE' });
-          modes.append(clear);
+          buttons.append(clear);
           root.append(node);
           entry = { node, jobs: node.querySelector('.jobs') };
           printers.set(info.name, entry);
         }
         const { node } = entry;
         node.dataset.mode = info.mode;
-        const label = MODES.find(([m]) => m === info.mode)[1];
+        const label = modes.find((m) => m.mode === info.mode)?.label ?? info.mode;
         const slow = info.mode === 'slow' ? ` (${info.slowMs} ms)` : '';
         node.querySelector('.meta').innerHTML = '';
         node
@@ -301,6 +305,7 @@
 
       function jobNode(job) {
         const card = el('article', { className: 'job' + (job.printed ? '' : ' not-printed') });
+        card.dataset.jobId = job.id;
         const info = el('div', { className: 'info' });
         const time = new Date(job.receivedAt).toLocaleTimeString();
         info.append(
@@ -328,6 +333,8 @@
       function addJob(job, atTop = true) {
         const entry = printers.get(job.printer);
         if (!entry) return;
+        // A job can arrive both in the snapshot and as a live event; show it once.
+        if (entry.jobs.querySelector(`[data-job-id="${job.id}"]`)) return;
         entry.jobs.querySelector('.empty')?.remove();
         const node = jobNode(job);
         if (atTop) entry.jobs.prepend(node);
@@ -346,7 +353,9 @@
         events.addEventListener('snapshot', (e) => {
           root.replaceChildren();
           printers.clear();
-          for (const p of JSON.parse(e.data)) {
+          const snapshot = JSON.parse(e.data);
+          modes = snapshot.modes;
+          for (const p of snapshot.printers) {
             upsertPrinter(p);
             for (const job of p.jobs) addJob(job, false);
           }

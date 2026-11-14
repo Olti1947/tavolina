@@ -118,11 +118,13 @@ export function decode(bytes: Uint8Array): Doc {
       i += 1;
     } else if (b === DLE) {
       // DLE EOT n: real-time status query, answered by the printer, not printed.
-      if (at(1) === 0x04 && at(2) !== undefined) {
+      if (at(1) === undefined) {
+        truncated('DLE');
+      } else if (at(1) === 0x04 && at(2) === undefined) {
+        truncated('DLE EOT');
+      } else if (at(1) === 0x04) {
         if (at(2)! < 1 || at(2)! > 4) warn(`DLE EOT ${at(2)} is not a status query we support`);
         i += 3;
-      } else if (at(1) === undefined || at(2) === undefined) {
-        truncated('DLE EOT');
       } else {
         warn(`Unknown command DLE ${hex(at(1)!)}`);
         i += 1;
@@ -202,7 +204,12 @@ export function decode(bytes: Uint8Array): Doc {
         }
         blocks.push({ kind: 'cut', partial: m === 1 || m === 49 || m === 66 });
         i += withFeed ? 4 : 3;
-      } else if (cmd === 0x28 && at(2) === 0x6b) {
+      } else if (cmd === 0x28 && at(2) === undefined) {
+        truncated('GS (');
+      } else if (cmd === 0x28 && at(2) !== 0x6b) {
+        warn(`Unknown command GS ( ${hex(at(2)!)}`);
+        i += 1;
+      } else if (cmd === 0x28) {
         // GS ( k pL pH cn fn [params]: 2D codes. Length pL + pH * 256 covers cn, fn and params.
         const pL = at(3);
         const pH = at(4);
@@ -262,7 +269,7 @@ export function decode(bytes: Uint8Array): Doc {
       // Collect a run of printable ASCII at once.
       let j = i;
       while (j < bytes.length && bytes[j]! >= 0x20 && bytes[j]! < 0x7f) j++;
-      addText(String.fromCharCode(...bytes.subarray(i, j)));
+      addText(Buffer.from(bytes.buffer, bytes.byteOffset + i, j - i).toString('latin1'));
       i = j;
     } else {
       const ch = HIGH_CHARS[codePage]?.[b];

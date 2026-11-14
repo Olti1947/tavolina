@@ -32,6 +32,12 @@ describe('StatusScanner', () => {
     ]);
   });
 
+  it('finds a query split after its second byte', () => {
+    const scanner = new StatusScanner();
+    expect(scanner.push(Buffer.from([0x41, 0x10, 0x04]))).toEqual([]);
+    expect(scanner.push(Buffer.from([0x01]))).toEqual([{ cmd: 'DLE EOT', n: 1 }]);
+  });
+
   it('finds a query split across chunks', () => {
     const scanner = new StatusScanner();
     expect(scanner.push(Buffer.from([0x41, 0x10]))).toEqual([]);

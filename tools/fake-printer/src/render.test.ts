@@ -35,6 +35,15 @@ describe('renderJob', () => {
     ]);
   });
 
+  it('shows a warning instead of failing when the QR data is too long', async () => {
+    const data = 'x'.repeat(4000);
+    const len = data.length + 3;
+    const store = `\x1d(k${String.fromCharCode(len & 0xff, len >> 8)}\x31\x50\x30${data}`;
+    const rendered = await renderJob(job(store + '\x1d(k\x03\x00\x31\x51\x30'), 80);
+    expect(rendered.html).toContain('could not be drawn');
+    expect(rendered.warnings[0]).toMatch(/^QR code could not be drawn/);
+  });
+
   it('draws a QR code as SVG', async () => {
     const data = 'abc';
     const store = `\x1d(k${String.fromCharCode(data.length + 3)}\x00\x31\x50\x30${data}`;

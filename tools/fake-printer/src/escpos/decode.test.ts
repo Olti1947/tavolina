@@ -119,6 +119,23 @@ describe('decode', () => {
     expect(decode(bytes('a\n', ESC)).warnings).toEqual(['ESC is cut off at the end of the job']);
   });
 
+  it('names the right command when a job ends mid-command', () => {
+    expect(decode(bytes('a\n', 0x10)).warnings).toEqual(['DLE is cut off at the end of the job']);
+    expect(decode(bytes('a\n', 0x10, 0x04)).warnings).toEqual([
+      'DLE EOT is cut off at the end of the job',
+    ]);
+    expect(decode(bytes('a\n', 0x10, 0x14)).warnings[0]).toBe('Unknown command DLE 0x14');
+    expect(decode(bytes('a\n', GS, 0x28)).warnings).toEqual([
+      'GS ( is cut off at the end of the job',
+    ]);
+    expect(decode(bytes('a\n', GS, 0x28, 0x4c)).warnings[0]).toBe('Unknown command GS ( 0x4C');
+  });
+
+  it('decodes a very long line without running out of stack', () => {
+    const doc = decode(bytes('x'.repeat(500_000), '\n'));
+    expect(text(doc.blocks[0])).toHaveLength(500_000);
+  });
+
   it('warns when the last line has no LF but still shows it', () => {
     const doc = decode(bytes('Total'));
     expect(doc.blocks.map(text)).toEqual(['Total']);

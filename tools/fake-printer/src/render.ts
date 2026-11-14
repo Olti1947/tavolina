@@ -40,11 +40,21 @@ async function renderBlock(
     case 'cut':
       return { html: `<div class="cut">${block.partial ? 'partial cut' : 'cut'}</div>` };
     case 'qr': {
-      const svg = await QRCode.toString(block.data || ' ', {
-        type: 'svg',
-        errorCorrectionLevel: block.ecc as QRCode.QRCodeErrorCorrectionLevel,
-        margin: 1,
-      });
+      let svg: string;
+      try {
+        svg = await QRCode.toString(block.data || ' ', {
+          type: 'svg',
+          errorCorrectionLevel: block.ecc as QRCode.QRCodeErrorCorrectionLevel,
+          margin: 1,
+        });
+      } catch (err) {
+        // A builder bug (too much data for a QR code) must show on the card, not stop the printer.
+        const reason = err instanceof Error ? err.message : String(err);
+        return {
+          html: `<div class="qr-error">QR code (${block.data.length} characters) could not be drawn</div>`,
+          warning: `QR code could not be drawn: ${reason}`,
+        };
+      }
       return {
         html: `<div class="qr ${block.align}" style="--m:${block.moduleSize}" title="${escapeHtml(block.data)}">${svg}</div>`,
       };
