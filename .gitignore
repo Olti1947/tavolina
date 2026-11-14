@@ -34,3 +34,6 @@ ios/
 # Playwright
 playwright-report/
 test-results/
+
+# Vendor manuals stay out of the public repo (docs/decisions.md, 2026-11-13)
+docs/regulation/FP-700-*.pdf
